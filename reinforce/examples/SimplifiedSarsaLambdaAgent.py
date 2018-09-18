@@ -132,9 +132,7 @@ def main():
 
     env = gym.make("WindyGridWorld-v0")
     # env = WindyGridWorld()
-    directory = "/home/qiang/workspace/reinforce/reinforce/monitor/gridworld"
-    
-    env = gym.wrappers.Monitor(env, directory, force=True)
+
     agent = SarsaLambdaAgent(env)
     print("Learning...")  
     agent.learning(lambda_ = 0.01,

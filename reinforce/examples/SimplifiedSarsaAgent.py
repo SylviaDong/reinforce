@@ -14,43 +14,48 @@ from gridworld import *
 class SarsaAgent(object):
     def __init__(self, env:Env):
         # 保存一些Agent可以观测到的环境信息以及已经学到的经验
-        self.env = env
-        self.Q = {}  # {s0:[,,,,,,],s1:[,,,,,]} 数组内元素个数为行为空间大小
+        self.env = env   # 个体持有环境的引用
+        self.Q = {}  #  个体维护一张行为价值表Q {s0:[,,,,,,],s1:[,,,,,]} 数组内元素个数为行为空间大小
+                     # 对于Q表，我使用的是字典套字典的数据结构，
+                     # 即字典里的每一个键对应于状态名，其值对应于另一个新字典，这个新字典的键值是行为名，值则对应相应的行为价值。
+                     # 个体并不掌握环境的具体信息，从与环境交互过程中个体得到的只是一个观测，
+                     # 我们不能事先假定观测的数据格式，用字典比较稳妥。
         self._initAgent()
         self.state = None
 
     def _get_state_name(self, state):   # 得到状态对应的字符串作为以字典存储的价值函数
         return str(state)               # 的键值，应针对不同的状态值单独设计，避免重复
                                         # 这里仅针对格子世界
-    def _is_state_in_Q(self, s):
+
+    def _is_state_in_Q(self, s):        # 判断s的Q值是否存在
         return self.Q.get(s) is not None
 
-    def _init_state_value(self, s_name, randomized = True):
+    def _init_state_value(self, s_name, randomized = True):    # 初始化某状态的Q值
         if not self._is_state_in_Q(s_name):
             self.Q[s_name] = {}
             for action in range(self.env.action_space.n):
                 default_v = random() / 10 if randomized is True else 0.0
                 self.Q[s_name][action] = default_v
 
-    def _assert_state_in_Q(self, s, randomized=True):
+    def _assert_state_in_Q(self, s, randomized=True):    # 确保某状态Q值存在
         # 　cann't find the state
         if not self._is_state_in_Q(s):
             self._init_state_value(s, randomized)
     
-    def _get_Q(self, s, a):
+    def _get_Q(self, s, a):          # 获取Q(s,a)
         self._assert_state_in_Q(s, randomized=True)
         return self.Q[s][a]
 
-    def _set_Q(self, s, a, value):
+    def _set_Q(self, s, a, value):   # 设置Q(s,a)
         self._assert_state_in_Q(s, randomized=True)
         self.Q[s][a] = value
 
-    def _initAgent(self):
+    def _initAgent(self):            # reset
         self.state = self.env.reset()
         s_name = self._get_state_name(self.state)
         self._assert_state_in_Q(s_name, randomized = False)
     
-    # using simple decaying epsilon greedy exploration
+    # using simple decaying epsilon greedy exploration e-greed策略
     def _curPolicy(self, s, episode_num, use_epsilon):
         epsilon = 1.00 / (episode_num+1)
         Q_s = self.Q[s]
@@ -64,10 +69,11 @@ class SarsaAgent(object):
             action = int(str_act)
         return action
 
-    # Agent依据当前策略和状态决定下一步的动作
+    # Agent依据当前策略和状态决定下一步的动作 但不马上执行
     def performPolicy(self, s, episode_num, use_epsilon=True):
         return self._curPolicy(s, episode_num, use_epsilon)
 
+    # 执行动作
     def act(self, a):
         return self.env.step(a)
 
@@ -117,9 +123,6 @@ class SarsaAgent(object):
 def main():
 
     env = gym.make("WindyGridWorld-v0")
-    directory = "/home/qiang/workspace/reinforce/python/monitor"
-    
-    env = gym.wrappers.Monitor(env, directory, force=True)
     agent = SarsaAgent(env)
     env.reset()
     print("Learning...")  
